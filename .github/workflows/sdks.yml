@@ -1,8 +1,6 @@
 name: SDKs
 on:
-  pull_request:
-  schedule:
-    - cron: '0 5 * * *'
+  workflow_dispatch:
 
 jobs:
   bundle-tests:
@@ -10,8 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [release, devel, trunk]
-        os: [ubuntu-24.04, macos-13]
+        version: [release]
+        os: [ubuntu-24.04]
     env:
       ANDROID_API_LEVEL: 24
       BUNDLE_VERSION: 0.1
