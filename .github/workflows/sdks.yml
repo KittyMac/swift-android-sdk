@@ -296,10 +296,11 @@ jobs:
             cp ~/termux-debug.apk pack
           fi
       - name: Upload test directory
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sdk-tests-${{ matrix.version }}-${{ matrix.arch }}
           path: pack/
+          compression-level: 0
   run-tests-on-android-x86_64-emulator:
     runs-on: macos-latest
     needs: build-sdk-and-tests
