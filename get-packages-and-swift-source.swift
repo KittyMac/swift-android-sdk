@@ -1,3 +1,6 @@
+// brew install cmake ninja sccache patchelf
+// BUILD_SWIFT_PM=1 SWIFT_TAG=swift-5.8.1-RELEASE ANDROID_ARCH=aarch64 swift ./get-packages-and-swift-source.swift 5.8.1
+
 import Foundation
 
 // The Termux packages to download and unpack
@@ -13,7 +16,7 @@ let extraSwiftRepos = ["swift-llbuild", "swift-package-manager", "swift-driver",
                        "swift-collections", "swift-certificates", "swift-asn1"]
 let renameRepos = ["swift-llbuild" : "llbuild", "swift-package-manager" : "swiftpm", "Yams" : "yams"]
 var repoTags = ["swift-system" : "1.1.1", "swift-collections" : "1.0.1", "swift-asn1" : "0.7.0",
-                "swift-certificates" : "0.1.0", "swift-package-manager": "5.7.3", "Yams" : "5.0.1"]
+                "swift-certificates" : "0.1.0", "Yams" : "5.0.1", "swift-package-manager": "swift-5.7.3-RELEASE"]
 if ProcessInfo.processInfo.environment["BUILD_SWIFT_PM"] != nil {
   termuxPackages += ["ncurses", "libsqlite"]
 }
@@ -35,13 +38,13 @@ let tagExtract = try NSRegularExpression(pattern: "swift-([0-9]+\\.[0-9])?\\.?[0
 if tagExtract.numberOfMatches(in: SWIFT_TAG, range: tagRange) == 1 {
   let match = tagExtract.firstMatch(in: SWIFT_TAG, range: tagRange)
   if match!.range(at: 1).location != NSNotFound {
-    swiftVersion = SWIFT_TAG.substring(with: match!.range(at: 1))
+    swiftVersion = (SWIFT_TAG as NSString).substring(with: match!.range(at: 1))
   }
 
-  swiftBranch = SWIFT_TAG.substring(with: match!.range(at: 2))
+  swiftBranch = (SWIFT_TAG as NSString).substring(with: match!.range(at: 2))
 
   if match!.range(at: 3).location != NSNotFound {
-    swiftSnapshotDate = SWIFT_TAG.substring(with: match!.range(at: 3))
+    swiftSnapshotDate = (SWIFT_TAG as NSString).substring(with: match!.range(at: 3))
   }
 } else {
   fatalError("Something went wrong with extracting data from the SWIFT_TAG environment variable: \(SWIFT_TAG)")
@@ -125,13 +128,24 @@ func runCommand(_ name: String, with args: [String]) -> String {
 print("Checking if needed system utilities are installed...")
 print(runCommand("cmake", with: ["--version"]))
 print("ninja \(runCommand("ninja", with: ["--version"]))")
-print(runCommand("python", with: ["--version"]))
 print(runCommand("patchelf", with: ["--version"]))
+#if os(macOS)
+#else
+print(runCommand("python", with: ["--version"]))
 print(runCommand("ar", with: ["--version"]))
+#endif
 print(runCommand("tar", with: ["--version"]))
 print(runCommand("xz", with: ["--version"]))
 print(runCommand("curl", with: ["--version"]))
 print(runCommand("gzip", with: ["--version"]))
+
+#if os(macOS)
+extension String {
+    func appendingPathComponent(_ path: String) -> String {
+        (self as NSString).appendingPathComponent(path)
+    }
+} 
+#endif
 
 let fmd = FileManager.default
 let cwd = fmd.currentDirectoryPath
@@ -178,7 +192,11 @@ for termuxPackage in termuxPackages {
 
   if !fmd.fileExists(atPath: cwd.appendingPathComponent(sdkDir)) {
     print("Unpacking \(packageName)")
-    _ = runCommand("ar", with: ["x", "\(termuxArchive.appendingPathComponent(String(packageName)))"])
+    #if os(macOS)
+        _ = runCommand("tar", with: ["xf", "\(termuxArchive.appendingPathComponent(String(packageName)))"])
+    #else
+        _ = runCommand("ar", with: ["x", "\(termuxArchive.appendingPathComponent(String(packageName)))"])
+    #endif
     _ = runCommand("tar", with: ["xf", "data.tar.xz"])
   }
 }
