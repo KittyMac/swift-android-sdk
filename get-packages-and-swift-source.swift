@@ -254,20 +254,11 @@ if ProcessInfo.processInfo.environment["BUILD_SWIFT_PM"] != nil {
   for repo in extraSwiftRepos {
     let tag = repoTags[repo] ?? SWIFT_TAG
     let downloadUrl = "https://github.com/\(repo == "Yams" ? "jpsim" : "apple")/\(repo)/archive/refs/tags/\(tag).tar.gz"
-    
-    print("Checking for vendored \(repo) for \(downloadUrl)")
-    if fmd.fileExists(atPath: cwd.appendingPathComponent("vendor").appendingPathComponent(repo)) {
-        _ = runCommand("cp", with: [cwd.appendingPathComponent("vendor").appendingPathComponent(repo), repo])
-    } else {
-        print("Downloading and extracting \(repo) source from \(downloadUrl)")
-        _ = runCommand("curl", with: ["-L", "-O", downloadUrl])
-    }
-    
+    print("Downloading and extracting \(repo) source from \(downloadUrl)")
+    _ = runCommand("curl", with: ["-L", "-O", downloadUrl])
     _ = runCommand("tar", with: ["xf", "\(tag).tar.gz"])
     try fmd.moveItem(atPath: cwd.appendingPathComponent("\(repo)-\(tag)"),
                      toPath: cwd.appendingPathComponent(renameRepos[repo] ?? repo))
     try fmd.removeItem(atPath: cwd.appendingPathComponent("\(tag).tar.gz"))
   }
 }
-
-print("Finished get-packages-and-swift-source.swift")
