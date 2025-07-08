@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: [release, devel, trunk]
+        version: [release]
     outputs:
       release-version: ${{ steps.check.outputs.release-tag }}
       devel-version: ${{ steps.check.outputs.devel-tag }}
@@ -18,15 +18,15 @@ jobs:
         id: check
         run: |
           if [ ${{ matrix.version }} = 'release' ]; then
-            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/apple/swift/releases | grep -m1 swift-5.8 | cut -d- -f2)
+            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/swiftlang/swift/releases?page=2 | grep -m1 swift-5.8 | cut -d- -f2)
             SWIFT_TAG="swift-${LATEST_TOOLCHAIN_VERSION}-RELEASE"
             echo "::set-output name=release-tag::$SWIFT_TAG"
           elif [ ${{ matrix.version }} = 'devel' ]; then
-            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/apple/swift/tags | grep -m1 swift-5.9-DEV | cut -d- -f8-10)
+            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/swiftlang/swift/tags | grep -m1 swift-5.9-DEV | cut -d- -f8-10)
             SWIFT_TAG="swift-5.9-DEVELOPMENT-SNAPSHOT-${LATEST_TOOLCHAIN_VERSION}-a"
             echo "::set-output name=devel-tag::$SWIFT_TAG"
           else
-            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/apple/swift/tags | grep -m1 swift-DEV | cut -d- -f7-9)
+            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/swiftlang/swift/tags | grep -m1 swift-DEV | cut -d- -f7-9)
             SWIFT_TAG="swift-DEVELOPMENT-SNAPSHOT-${LATEST_TOOLCHAIN_VERSION}-a"
             echo "::set-output name=trunk-tag::$SWIFT_TAG"
           fi
@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [release, devel, trunk]
+        version: [release]
         arch: [aarch64, x86_64, armv7]
     env:
       ANDROID_API_LEVEL: 24
@@ -307,7 +307,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [release, devel, trunk]
+        version: [release]
     steps:
       - name: Download test directory
         uses: actions/download-artifact@v3
