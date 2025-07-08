@@ -99,6 +99,9 @@ jobs:
         run: |
           cd sdk-config
           sudo apt install ninja-build
+          
+          swift --version
+          
           BUILD_SWIFT_PM=1 swift get-packages-and-swift-source.swift
 
           SDK_NAME=$(ls | grep swift-${{ matrix.version }}-android-${{ matrix.arch }})
