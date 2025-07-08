@@ -4,7 +4,7 @@ on:
   
 jobs:
   get-latest-toolchain:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         version: [release]
@@ -51,7 +51,7 @@ jobs:
           wget -q https://download.swift.org/$SWIFT_BRANCH/ubuntu2204/$SWIFT_TAG/$SWIFT_TAG-ubuntu22.04.tar.gz
           echo "got latest toolchain: ${SWIFT_TAG}"
   build-sdk-and-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: get-latest-toolchain
     strategy:
       fail-fast: false
