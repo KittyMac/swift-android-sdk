@@ -1,8 +1,7 @@
 name: SDKs
 on:
-  pull_request:
-  schedule:
-    - cron: '0 9 * * *'
+  workflow_dispatch:
+  
 jobs:
   get-latest-toolchain:
     runs-on: ubuntu-latest
