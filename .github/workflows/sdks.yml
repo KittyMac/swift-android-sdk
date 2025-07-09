@@ -16,17 +16,6 @@ jobs:
       - name: Check for latest Swift ${{ matrix.version }} toolchain
         id: check
         run: |
-          
-          # Remove current version of swift and install known good version
-          rm -rf /usr/share/swift
-          rm -f /usr/bin/swift
-          
-          wget https://download.swift.org/swift-5.8.1-release/ubuntu2204/swift-5.8.1-RELEASE/swift-5.8.1-RELEASE-ubuntu22.04.tar.gz
-          tar -xvzf swift-5.8.1-RELEASE-ubuntu22.04.tar.gz
-          sudo mv swift-5.8.1-RELEASE-ubuntu22.04 /usr/share/swift
-          
-          swift --version
-          
           if [ ${{ matrix.version }} = 'release' ]; then
             LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/swiftlang/swift/releases?page=2 | grep -m1 swift-5.8 | cut -d- -f2)
             SWIFT_TAG="swift-${LATEST_TOOLCHAIN_VERSION}-RELEASE"
@@ -110,6 +99,16 @@ jobs:
         run: |
           cd sdk-config
           sudo apt install ninja-build
+          
+          # Remove current version of swift and install known good version
+          rm -rf /usr/share/swift
+          rm -f /usr/bin/swift
+          
+          wget https://download.swift.org/swift-5.8.1-release/ubuntu2204/swift-5.8.1-RELEASE/swift-5.8.1-RELEASE-ubuntu22.04.tar.gz
+          tar -xvzf swift-5.8.1-RELEASE-ubuntu22.04.tar.gz
+          sudo mv swift-5.8.1-RELEASE-ubuntu22.04 /usr/share/swift
+          
+          swift --version
           
           swift --version
           
