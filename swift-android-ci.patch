@@ -58,3 +58,4 @@ index bd31bec..4469cab 100755
 +            swiftpm_args += ['--destination', args.cross_compile_config, '-Xlinker', '-landroid-spawn', '--pkg-config-path', os.path.join(os.path.split(args.cross_compile_config)[0], 'lib/pkgconfig')]
          else:
              fatal_error("cannot cross-compile for %s" % args.cross_compile_host)
+ 
