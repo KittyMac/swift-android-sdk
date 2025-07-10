@@ -17,8 +17,7 @@ jobs:
         id: check
         run: |
           if [ ${{ matrix.version }} = 'release' ]; then
-            LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/swiftlang/swift/releases?page=2 | grep -m1 swift-5.8 | cut -d- -f2)
-            SWIFT_TAG="swift-${LATEST_TOOLCHAIN_VERSION}-RELEASE"
+            SWIFT_TAG="swift-5.8-RELEASE"
             echo "::set-output name=release-tag::$SWIFT_TAG"
           elif [ ${{ matrix.version }} = 'devel' ]; then
             LATEST_TOOLCHAIN_VERSION=$(curl -sL https://github.com/swiftlang/swift/tags | grep -m1 swift-5.9-DEV | cut -d- -f8-10)
@@ -98,6 +97,7 @@ jobs:
           ANDROID_ARCH: ${{ matrix.arch }}
         run: |
           cd sdk-config
+          sudo apt -q update
           sudo apt install ninja-build
           
           # Remove current version of swift and install known good version
