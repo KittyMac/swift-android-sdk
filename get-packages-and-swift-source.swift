@@ -1,5 +1,5 @@
 // brew install cmake ninja sccache patchelf
-// BUILD_SWIFT_PM=1 SWIFT_TAG=swift-5.8.1-RELEASE ANDROID_ARCH=aarch64 swift ./get-packages-and-swift-source.swift 5.8.1
+// BUILD_SWIFT_PM=1 SWIFT_TAG=swift-5.8-RELEASE ANDROID_ARCH=aarch64 swift ./get-packages-and-swift-source.swift 5.8
 
 import Foundation
 
@@ -48,7 +48,7 @@ if tagExtract.numberOfMatches(in: SWIFT_TAG, range: tagRange) == 1 {
 }
 
 repoTags["swift-argument-parser"] = "1.0.3"
-repoTags["swift-crypto"] = "1.1.5"
+repoTags["swift-crypto"] = "2.2.3"
 sdkDir = "swift-release-android-\(ANDROID_ARCH)-24-sdk"
 
 // takes the name of a command-line executable and the arguments to pass to it
