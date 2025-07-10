@@ -16,7 +16,7 @@ let extraSwiftRepos = ["swift-llbuild", "swift-package-manager", "swift-driver",
                        "swift-collections", "swift-certificates", "swift-asn1"]
 let renameRepos = ["swift-llbuild" : "llbuild", "swift-package-manager" : "swiftpm", "Yams" : "yams"]
 var repoTags = ["swift-system" : "1.1.1", "swift-collections" : "1.0.1", "swift-asn1" : "0.7.0",
-                "swift-certificates" : "0.1.0", "Yams" : "5.0.1", "swift-package-manager": "swift-5.7.3-RELEASE"]
+                "swift-certificates" : "0.1.0", "Yams" : "5.0.1", "swift-package-manager": "swift-5.8.1-RELEASE"]
 if ProcessInfo.processInfo.environment["BUILD_SWIFT_PM"] != nil {
   termuxPackages += ["ncurses", "libsqlite"]
 }
