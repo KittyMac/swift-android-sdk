@@ -123,6 +123,9 @@ jobs:
           swift --version
           
           BUILD_SWIFT_PM=1 swift get-packages-and-swift-source.swift
+          
+          echo "CHECK 0"
+          cat swift-crypto/Package.swift
 
           SDK_NAME=$(ls | grep swift-${{ matrix.version }}-android-${{ matrix.arch }})
           SDK=`pwd`/$SDK_NAME
@@ -131,6 +134,9 @@ jobs:
           git apply swift-android.patch swift-android-ci.patch
           sed -i "s%/data/data/com.termux/files%$SDK%" $SDK/usr/lib/pkgconfig/sqlite3.pc
           sed -i "s%clang-path\", self.toolchain.cc,%clang-path\", os.path.join(toolchain_path, 'bin', 'clang'),%" swift/utils/swift_build_support/swift_build_support/products/swiftpm.py
+          
+          echo "CHECK 1"
+          cat swift-crypto/Package.swift
 
           if [ ${{ matrix.version }} = 'release' ]; then
             sed -i "s%String(cString: getpass%\"fake\" //%" swiftpm/Sources/PackageRegistryTool/SwiftPackageRegistryTool.swift
@@ -144,12 +150,19 @@ jobs:
 
           ./swift/utils/build-script -RA --skip-build-cmark --build-llvm=0 --android --android-ndk $ANDROID_NDK --android-arch ${{ matrix.arch }} --android-api-level $ANDROID_API_LEVEL --build-swift-tools=0 --native-swift-tools-path=`pwd`/$SWIFT_TAG-ubuntu22.04/usr/bin --native-clang-tools-path=`pwd`/$SWIFT_TAG-ubuntu22.04/usr/bin --cross-compile-hosts=android-${{ matrix.arch }} --cross-compile-deps-path=$SDK --skip-local-build --build-swift-static-stdlib --xctest --skip-early-swift-driver --install-swift --install-libdispatch --install-foundation --install-xctest --install-destdir=$SDK --swift-install-components='clang-resource-dir-symlink;license;stdlib;sdk-overlay' --cross-compile-append-host-target-to-destdir=False -b -p --install-llbuild --sourcekit-lsp --skip-early-swiftsyntax
 
+          echo "CHECK 2"
+          cat swift-crypto/Package.swift
+
           cp $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$(echo ${{ matrix.arch }} | sed "s/v7//")-linux-android*/libc++_shared.so $SDK/usr/lib
           patchelf --set-rpath \$ORIGIN $SDK/usr/lib/swift/android/libdispatch.so
           patchelf --set-rpath \$ORIGIN/../..:\$ORIGIN $SDK/usr/lib/swift/android/lib[FXs]*.so
 
           tar cJf ~/$SDK_NAME.tar.xz $SDK_NAME
           rm -rf $SDK_NAME
+          
+          echo "CHECK 3"
+          cat swift-crypto/Package.swift
+          
       - name: Unpack ${{ matrix.version }} toolchain and SDK
         id: sdk-unpack
         run: |
@@ -177,9 +190,7 @@ jobs:
       - name: Build Swift crypto package
         run: |
           cd swift-crypto
-          pwd
-          ls -al
-          ls -al ../
+          echo "FINAL"
           cat Package.swift
           sed -i "s%#include <time%#include <signal.h>\n#include <time%" Sources/CCryptoBoringSSL/include/CCryptoBoringSSL_asn1.h
           sed -i "s%\\\\(testsDirectory)/.*Vectors%/data/local/tmp/pack/crypto-vectors%" Tests/CryptoTests/Utils/RFCVector.swift Tests/CryptoTests/Utils/Wycheproof.swift Tests/_CryptoExtrasTests/Utils/Wycheproof.swift
