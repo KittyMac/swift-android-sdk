@@ -1,5 +1,5 @@
 // brew install cmake ninja sccache patchelf
-// BUILD_SWIFT_PM=1 SWIFT_TAG=swift-5.8.1-RELEASE ANDROID_ARCH=aarch64 swift ./get-packages-and-swift-source.swift 5.8.1
+// BUILD_SWIFT_PM=1 SWIFT_TAG=swift-5.8-RELEASE ANDROID_ARCH=aarch64 swift ./get-packages-and-swift-source.swift 5.8
 
 import Foundation
 
@@ -16,7 +16,7 @@ let extraSwiftRepos = ["swift-llbuild", "swift-package-manager", "swift-driver",
                        "swift-collections", "swift-certificates", "swift-asn1"]
 let renameRepos = ["swift-llbuild" : "llbuild", "swift-package-manager" : "swiftpm", "Yams" : "yams"]
 var repoTags = ["swift-system" : "1.1.1", "swift-collections" : "1.0.1", "swift-asn1" : "0.7.0",
-                "swift-certificates" : "0.1.0", "Yams" : "5.0.1", "swift-package-manager": "swift-5.7.3-RELEASE"]
+                "swift-certificates" : "0.1.0", "Yams" : "5.0.1", "swift-package-manager": "swift-5.8-RELEASE"]
 if ProcessInfo.processInfo.environment["BUILD_SWIFT_PM"] != nil {
   termuxPackages += ["ncurses", "libsqlite"]
 }
@@ -29,8 +29,7 @@ guard let ANDROID_ARCH = ProcessInfo.processInfo.environment["ANDROID_ARCH"] els
   fatalError("You must specify an ANDROID_ARCH environment variable.")
 }
 
-var sdkDir = "", icuVersion = "", icuMajorVersion = "", swiftVersion = "",
-    swiftBranch = "", swiftSnapshotDate = ""
+var sdkDir = "", icuVersion = "", icuMajorVersion = "", swiftVersion = "", swiftSnapshotDate = ""
 
 let tagRange = NSRange(SWIFT_TAG.startIndex..., in: SWIFT_TAG)
 let tagExtract = try NSRegularExpression(pattern: "swift-([0-9]+\\.[0-9])?\\.?[0-9]*-?([A-Z-]+)([0-9-]+[0-9])?")
@@ -41,8 +40,6 @@ if tagExtract.numberOfMatches(in: SWIFT_TAG, range: tagRange) == 1 {
     swiftVersion = (SWIFT_TAG as NSString).substring(with: match!.range(at: 1))
   }
 
-  swiftBranch = (SWIFT_TAG as NSString).substring(with: match!.range(at: 2))
-
   if match!.range(at: 3).location != NSNotFound {
     swiftSnapshotDate = (SWIFT_TAG as NSString).substring(with: match!.range(at: 3))
   }
@@ -50,15 +47,9 @@ if tagExtract.numberOfMatches(in: SWIFT_TAG, range: tagRange) == 1 {
   fatalError("Something went wrong with extracting data from the SWIFT_TAG environment variable: \(SWIFT_TAG)")
 }
 
-if swiftBranch == "RELEASE" {
-  repoTags["swift-argument-parser"] = "1.0.3"
-  repoTags["swift-crypto"] = "2.2.3"
-  sdkDir = "swift-release-android-\(ANDROID_ARCH)-24-sdk"
-} else {
-  repoTags["swift-argument-parser"] = "1.2.2"
-  repoTags["swift-crypto"] = "2.4.0"
-  sdkDir = "swift-\(swiftVersion == "" ? "trunk" : "devel")-android-\(ANDROID_ARCH)-\(swiftSnapshotDate)-24-sdk"
-}
+repoTags["swift-argument-parser"] = "1.0.3"
+repoTags["swift-crypto"] = "2.2.3"
+sdkDir = "swift-release-android-\(ANDROID_ARCH)-24-sdk"
 
 // takes the name of a command-line executable and the arguments to pass to it
 func runCommand(_ name: String, with args: [String]) -> String {
@@ -131,7 +122,7 @@ print("ninja \(runCommand("ninja", with: ["--version"]))")
 print(runCommand("patchelf", with: ["--version"]))
 #if os(macOS)
 #else
-// print(runCommand("python", with: ["--version"]))
+print(runCommand("python", with: ["--version"]))
 print(runCommand("ar", with: ["--version"]))
 #endif
 print(runCommand("tar", with: ["--version"]))
