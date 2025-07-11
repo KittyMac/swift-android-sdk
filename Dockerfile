@@ -1,4 +1,4 @@
-FROM swift:5.8-jammy
+FROM swift:5.8-jammy AS builder
 
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && apt-get -q update && \
     apt-get install -y -q \
@@ -31,5 +31,8 @@ COPY ./build/build_all.sh ./build_all.sh
 
 RUN ./build_all.sh
 
+FROM swift:jammy
 
-
+COPY --from=builder /root/swift-release-android-aarch64-24-sdk.tar.xz .
+COPY --from=builder /root/swift-release-android-x86_64-24-sdk.tar.xz .
+COPY --from=builder /root/swift-release-android-armv7-24-sdk.tar.xz .

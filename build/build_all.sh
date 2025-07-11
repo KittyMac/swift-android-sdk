@@ -23,28 +23,35 @@ unzip android-ndk-r25c-linux.zip -d ./
 python --version
 swift --version
 
-# Run get-packages-and-swift-source.swift
-BUILD_SWIFT_PM=1 swift get-packages-and-swift-source.swift
+for arch in aarch64 armv7; do
 
-SDK_NAME=$(ls | grep swift-release-android-$ANDROID_ARCH)
-SDK=`pwd`/$SDK_NAME
+    # Run get-packages-and-swift-source.swift for this arch
+    ANDROID_ARCH=$arch BUILD_SWIFT_PM=1 swift get-packages-and-swift-source.swift
 
-echo building "$SDK_NAME"
+    SDK_NAME=$(ls | grep swift-release-android-$arch)
+    SDK=`pwd`/$SDK_NAME
 
-# Apply patches
-git apply swift-android.patch swift-android-ci.patch
+    echo Building SDK "$SDK_NAME"
+
+    # Apply all of this patches
+    git apply swift-android.patch swift-android-ci.patch
     
-sed -i "s%/data/data/com.termux/files%$SDK%" $SDK/usr/lib/pkgconfig/sqlite3.pc
-sed -i "s%clang-path\", self.toolchain.cc,%clang-path\", os.path.join(toolchain_path, 'bin', 'clang'),%" swift/utils/swift_build_support/swift_build_support/products/swiftpm.py
+    sed -i "s%/data/data/com.termux/files%$SDK%" $SDK/usr/lib/pkgconfig/sqlite3.pc
+    sed -i "s%clang-path\", self.toolchain.cc,%clang-path\", os.path.join(toolchain_path, 'bin', 'clang'),%" swift/utils/swift_build_support/swift_build_support/products/swiftpm.py
 
-sed -i "s%String(cString: getpass%\"fake\" //%" swiftpm/Sources/PackageRegistryTool/SwiftPackageRegistryTool.swift
+    sed -i "s%String(cString: getpass%\"fake\" //%" swiftpm/Sources/PackageRegistryTool/SwiftPackageRegistryTool.swift
 
-./swift/utils/build-script -RA --skip-build-cmark --build-llvm=0 --android --android-ndk $ANDROID_NDK --android-arch $ANDROID_ARCH --android-api-level $ANDROID_API_LEVEL --build-swift-tools=0 --native-swift-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --native-clang-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --cross-compile-hosts=android-$ANDROID_ARCH --cross-compile-deps-path=$SDK --skip-local-build --build-swift-static-stdlib --xctest --skip-early-swift-driver --install-swift --install-libdispatch --install-foundation --install-xctest --install-destdir=$SDK --swift-install-components='clang-resource-dir-symlink;license;stdlib;sdk-overlay' --cross-compile-append-host-target-to-destdir=False -b -p --install-llbuild --sourcekit-lsp --skip-early-swiftsyntax
+    ./swift/utils/build-script -RA --skip-build-cmark --build-llvm=0 --android --android-ndk $ANDROID_NDK --android-arch $arch --android-api-level $ANDROID_API_LEVEL --build-swift-tools=0 --native-swift-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --native-clang-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --cross-compile-hosts=android-$arch --cross-compile-deps-path=$SDK --skip-local-build --build-swift-static-stdlib --xctest --skip-early-swift-driver --install-swift --install-libdispatch --install-foundation --install-xctest --install-destdir=$SDK --swift-install-components='clang-resource-dir-symlink;license;stdlib;sdk-overlay' --cross-compile-append-host-target-to-destdir=False -b -p --install-llbuild --sourcekit-lsp --skip-early-swiftsyntax
 
-cp $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$(echo $ANDROID_ARCH | sed "s/v7//")-linux-android*/libc++_shared.so $SDK/usr/lib
-patchelf --set-rpath \$ORIGIN $SDK/usr/lib/swift/android/libdispatch.so
-patchelf --set-rpath \$ORIGIN/../..:\$ORIGIN $SDK/usr/lib/swift/android/lib[FXs]*.so
+    cp $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$(echo $arch | sed "s/v7//")-linux-android*/libc++_shared.so $SDK/usr/lib
+    patchelf --set-rpath \$ORIGIN $SDK/usr/lib/swift/android/libdispatch.so
+    patchelf --set-rpath \$ORIGIN/../..:\$ORIGIN $SDK/usr/lib/swift/android/lib[FXs]*.so
+    
+    tar cJf $SDK_NAME.tar.xz $SDK_NAME
+    rm -rf $SDK_NAME
+    
+done
 
-tar cJf ~/$SDK_NAME.tar.xz $SDK_NAME
-rm -rf $SDK_NAME
+# TODO: combine and export
+# TODO: user builder in DOCKERFILE to reduce final container size
     
