@@ -1,4 +1,6 @@
 
+all: docker-release docker-extract
+
 docker-release:
 	-DOCKER_HOST=ssh://rjbowli@192.168.111.203 docker buildx create --name cluster_builder203 --platform linux/amd64
 	-docker buildx create --name cluster_builder203 --platform linux/arm64 --append
