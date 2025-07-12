@@ -9,6 +9,7 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && ap
     patchelf              \
     python3               \
     zip                   \
+    rsync                 \
     unzip
 
 RUN rm -rf /var/lib/apt/lists/*
@@ -27,6 +28,7 @@ COPY ./get-packages-and-swift-source.swift ./get-packages-and-swift-source.swift
 COPY ./package-patches ./package-patches
 COPY ./swift-android-ci.patch ./swift-android-ci.patch
 COPY ./swift-android.patch ./swift-android.patch
+COPY ./swift-android-16KB.patch ./swift-android-16KB.patch
 COPY ./build/build_all.sh ./build_all.sh
 
 RUN ./build_all.sh
@@ -34,5 +36,5 @@ RUN ./build_all.sh
 FROM swift:jammy
 
 COPY --from=builder /root/swift-release-android-aarch64-24-sdk.tar.xz .
-COPY --from=builder /root/swift-release-android-x86_64-24-sdk.tar.xz .
 COPY --from=builder /root/swift-release-android-armv7-24-sdk.tar.xz .
+COPY --from=builder /root/swift-release-android-x86_64-24-sdk.tar.xz .
