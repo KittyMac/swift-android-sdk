@@ -47,19 +47,26 @@ for arch in aarch64 armv7 x86_64; do
     
     sed -i "s%String(cString: getpass%\"fake\" //%" swiftpm/Sources/PackageRegistryTool/SwiftPackageRegistryTool.swift
     
-    ./swift/utils/build-script -RA --skip-build-cmark --build-llvm=0 --android --android-ndk $ANDROID_NDK --android-arch $arch --android-api-level $ANDROID_API_LEVEL --build-swift-tools=0 --native-swift-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --native-clang-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --cross-compile-hosts=android-$arch --cross-compile-deps-path=$SDK --skip-local-build --build-swift-static-stdlib --xctest --skip-early-swift-driver --install-swift --install-libdispatch --install-foundation --install-xctest --install-destdir=$SDK --swift-install-components='clang-resource-dir-symlink;license;stdlib;sdk-overlay' --cross-compile-append-host-target-to-destdir=False -b -p --install-llbuild --sourcekit-lsp --skip-early-swiftsyntax
+    ./swift/utils/build-script -RA --skip-build-cmark --build-llvm=0 --android --android-ndk $ANDROID_NDK --android-arch $arch --android-api-level $ANDROID_API_LEVEL --build-swift-tools=0 --native-swift-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --native-clang-tools-path=$SWIFT_UBUNTU_HOME/usr/bin --cross-compile-hosts=android-$arch --cross-compile-deps-path=$SDK --skip-local-build --build-swift-static-stdlib --xctest --skip-early-swift-driver --install-swift --install-libdispatch --install-foundation --install-xctest --install-destdir=$SDK --swift-install-components='clang-resource-dir-symlink;license;stdlib;sdk-overlay' --cross-compile-append-host-target-to-destdir=False -b -p --install-llbuild --sourcekit-lsp --skip-early-swiftsyntax 
 
     cp $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$(echo $arch | sed "s/v7//")-linux-android*/libc++_shared.so $SDK/usr/lib
     patchelf --set-rpath \$ORIGIN $SDK/usr/lib/swift/android/libdispatch.so
     patchelf --set-rpath \$ORIGIN/../..:\$ORIGIN $SDK/usr/lib/swift/android/lib[FXs]*.so
+    
+    echo "Alignment check for libdispatch.so (should see 2**14 if aligned)"
+    objdump -p $SDK/usr/lib/swift/android/libdispatch.so | grep LOAD
+    echo "Alignment check for libswiftDispatch.so (should see 2**14 if aligned)"
+    objdump -p $SDK/usr/lib/swift/android/libswiftDispatch.so | grep LOAD
+    echo "Alignment check for libFoundation.so (should see 2**14 if aligned)"
+    objdump -p $SDK/usr/lib/swift/android/libFoundation.so | grep LOAD
+    echo "Alignment check for libFoundationNetworking.so (should see 2**14 if aligned)"
+    objdump -p $SDK/usr/lib/swift/android/libFoundationNetworking.so | grep LOAD
     
     tar cJf ../$SDK_NAME.tar.xz $SDK_NAME
     
     cd ../
     
     rm -rf sdk_config
-    
-    ls -al
     
 done
 

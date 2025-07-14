@@ -1,5 +1,5 @@
---- a/swift/stdlib/cmake/modules/AddSwiftStdlib.cmake	2025-07-11 17:20:43
-+++ b/swift/stdlib/cmake/modules/AddSwiftStdlib.cmake	2025-07-11 17:23:01
+--- a/swift/stdlib/cmake/modules/AddSwiftStdlib.cmake	2023-03-30 14:35:39
++++ b/swift/stdlib/cmake/modules/AddSwiftStdlib.cmake	2025-07-12 22:14:27
 @@ -2128,6 +2128,8 @@
          list(APPEND swiftlib_link_flags_all "-shared")
          # TODO: Instead of `lib${name}.so` find variable or target property which already have this value.
@@ -9,3 +9,44 @@
        endif()
  
        if (SWIFTLIB_BACK_DEPLOYMENT_LIBRARY)
+--- a/swift-corelibs-foundation/Sources/Foundation/CMakeLists.txt	2023-01-12 13:27:51
++++ b/swift-corelibs-foundation/Sources/Foundation/CMakeLists.txt	2025-07-13 21:18:20
+@@ -162,6 +162,7 @@
+     uuid
+   PUBLIC
+     swiftDispatch)
++target_link_options(Foundation PRIVATE "SHELL:-Xlinker -z -Xlinker max-page-size=16384")
+ set_target_properties(Foundation PROPERTIES
+   INSTALL_RPATH "$ORIGIN"
+   BUILD_RPATH "$<TARGET_FILE_DIR:swiftDispatch>"
+--- a/swift-corelibs-foundation/Sources/FoundationNetworking/CMakeLists.txt	2023-01-12 13:27:51
++++ b/swift-corelibs-foundation/Sources/FoundationNetworking/CMakeLists.txt	2025-07-13 21:18:39
+@@ -65,6 +65,7 @@
+     CFURLSessionInterface
+   PUBLIC
+     Foundation)
++target_link_options(FoundationNetworking PRIVATE "SHELL:-Xlinker -z -Xlinker max-page-size=16384")
+ 
+ if(NOT BUILD_SHARED_LIBS)
+   target_compile_options(FoundationNetworking
+--- a/swift-corelibs-libdispatch/CMakeLists.txt	2025-07-12 22:54:17
++++ b/swift-corelibs-libdispatch/CMakeLists.txt	2025-07-13 22:10:21
+@@ -299,6 +299,7 @@
+   set(INSTALL_OS_HEADERS_DIR "include/os" CACHE PATH "Path where the headers will be installed")
+ endif()
+ 
++add_link_options("$<$<COMPILE_LANGUAGE:C,CXX>:-Wl,-z,max-page-size=16384>")
+ 
+ add_subdirectory(dispatch)
+ add_subdirectory(man)
+--- a/swift-corelibs-libdispatch/src/swift/CMakeLists.txt	2022-10-01 11:48:05
++++ b/swift-corelibs-libdispatch/src/swift/CMakeLists.txt	2025-07-13 21:17:56
+@@ -42,6 +42,8 @@
+   BlocksRuntime::BlocksRuntime)
+ target_link_libraries(swiftDispatch PUBLIC
+   dispatch)
++target_link_options(swiftDispatch PRIVATE "SHELL:-Xlinker -z -Xlinker max-page-size=16384")
++
+ add_dependencies(swiftDispatch module-maps)
+ 
+ get_swift_host_arch(swift_arch)
