@@ -17,7 +17,7 @@ docker-extract:
 	docker run --platform linux/amd64 --rm -v $(shell pwd):/outTemp kittymac/swiftandroidsdk /bin/bash -lc 'cp swift-release-android-x86_64-24-sdk.tar.xz /outTemp/swift-release-android-x86_64-24-sdk.tar.xz'
 	
 	cp swift-release-android-aarch64-24-sdk.tar.xz ../../SilkRoad/AndroidSDK/swift-release-android-aarch64-24-sdk.tar.xz
-	cp swift-release-android-armv7-24-sdk.tar.xz ../../SilkRoad/AndroidSDK/swift-release-android-armv7-24-sdk.tar.xzxz
+	cp swift-release-android-armv7-24-sdk.tar.xz ../../SilkRoad/AndroidSDK/swift-release-android-armv7-24-sdk.tar.xz
 	cp swift-release-android-x86_64-24-sdk.tar.xz ../../SilkRoad/AndroidSDK/swift-release-android-x86_64-24-sdk.tar.xz
 	
 
