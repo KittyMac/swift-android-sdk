@@ -6,7 +6,6 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && ap
     curl                  \
     cmake                 \
     ninja-build           \
-    patchelf              \
     python3               \
     zip                   \
     rsync                 \
@@ -14,6 +13,9 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && ap
 
 RUN rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+RUN curl -fsSL https://github.com/NixOS/patchelf/releases/download/0.18.0/patchelf-0.18.0-x86_64.tar.gz \
+    | tar xz -C /usr/local ./bin/patchelf
 
 RUN clang --version
 RUN clang++ --version
@@ -30,6 +32,7 @@ COPY ./swift-android-ci.patch ./swift-android-ci.patch
 COPY ./swift-android.patch ./swift-android.patch
 COPY ./swift-android-16KB.patch ./swift-android-16KB.patch
 COPY ./build/build_all.sh ./build_all.sh
+COPY ./AndroidLibs ./AndroidLibs
 
 RUN ./build_all.sh
 

@@ -3,9 +3,10 @@
 
 import Foundation
 
-// The Termux packages to download and unpack
+// The Termux packages to unpack. These are vendored as .deb files under
+// AndroidLibs/<abi>/ rather than downloaded, so that the versions are pinned.
+// Originally sourced from https://packages.termux.dev/apt/termux-main
 var termuxPackages = ["libicu", "libicu-static", "libandroid-spawn", "libcurl", "libxml2"]
-let termuxURL = "https://packages.termux.dev/apt/termux-main"
 
 let swiftRepos = ["llvm-project", "swift", "swift-experimental-string-processing", "swift-corelibs-libdispatch",
                   "swift-corelibs-foundation", "swift-corelibs-xctest", "swift-syntax"]
@@ -140,53 +141,114 @@ extension String {
 
 let fmd = FileManager.default
 let cwd = fmd.currentDirectoryPath
-let termuxArchive = cwd.appendingPathComponent("termux")
-if !fmd.fileExists(atPath: termuxArchive) {
-  try fmd.createDirectory(atPath: termuxArchive, withIntermediateDirectories: false)
+
+// Termux packages are vendored as .deb files under AndroidLibs/ instead of being
+// resolved against Termux's live package index. Termux "stable" is a rolling repo
+// that only ever hosts the current version of a package (older .debs are removed
+// from the pool entirely), and the ICU major version is baked into every exported
+// ICU symbol -- libicuuc 78 exports ucnv_open_78, not ucnv_open_77. An unpinned
+// libicu therefore silently produces a libFoundation.so that cannot resolve
+// against any previously built libicuuc.so.
+let androidLibs = cwd.appendingPathComponent("AndroidLibs")
+
+// ANDROID_ARCH -> (AndroidLibs subdirectory, arch suffix used in Termux .deb names)
+let vendoredArchitectures = [
+  "aarch64": (directory: "arm64-v8a", debSuffix: "aarch64"),
+  "armv7": (directory: "armeabi-v7a", debSuffix: "arm"),
+  "x86_64": (directory: "x86_64", debSuffix: "x86_64"),
+]
+
+guard let vendoredArch = vendoredArchitectures[ANDROID_ARCH] else {
+  fatalError("""
+    unsupported ANDROID_ARCH '\(ANDROID_ARCH)'
+    expected one of: \(vendoredArchitectures.keys.sorted().joined(separator: ", "))
+    """)
 }
 
-if !fmd.fileExists(atPath: termuxArchive.appendingPathComponent("Packages-\(ANDROID_ARCH)")) {
-  _ = runCommand("curl", with: ["-o", "termux/Packages-\(ANDROID_ARCH)",
-      "\(termuxURL)/dists/stable/main/binary-\(ANDROID_ARCH == "armv7" ? "arm" : ANDROID_ARCH)/Packages"])
+let vendorDir = androidLibs.appendingPathComponent(vendoredArch.directory)
+guard fmd.fileExists(atPath: vendorDir) else {
+  fatalError("""
+    no vendored Termux packages for \(ANDROID_ARCH): missing directory \(vendorDir)
+    it must contain one .deb per package, named <package>_<version>_\(vendoredArch.debSuffix).deb:
+      \(termuxPackages.joined(separator: ", "))
+    """)
 }
 
-let packages = try String(contentsOfFile: termuxArchive.appendingPathComponent("Packages-\(ANDROID_ARCH)"), encoding: .utf8)
+let vendoredFiles = try fmd.contentsOfDirectory(atPath: vendorDir).sorted()
+
+// Resolve every package to exactly one vendored .deb before unpacking anything, so
+// that a missing or ambiguous package fails the build immediately rather than half
+// way through populating the SDK.
+var resolvedPackages: [(package: String, name: String, path: String)] = []
 
 for termuxPackage in termuxPackages {
-  guard let packagePathRange = packages.range(of: "\\S+\(termuxPackage)_\\S+", options: .regularExpression) else {
-    fatalError("couldn't find \(termuxPackage) in Packages list")
-  }
-  let packagePath = packages[packagePathRange]
-
-  guard let packageNameRange = packagePath.range(of: "\(termuxPackage)_\\S+", options: .regularExpression) else {
-    fatalError("couldn't extract \(termuxPackage) .deb package from package path")
-  }
-  let packageName = packagePath[packageNameRange]
-
-  print("Checking for \(packageName)")
-  if !fmd.fileExists(atPath: termuxArchive.appendingPathComponent(String(packageName))) {
-    print("Downloading \(packageName)")
-    _ = runCommand("curl", with: ["-o", "termux/\(packageName)",
-        "\(termuxURL)/\(packagePath)"])
+  // Match "<package>_<version>_<arch>.deb". The trailing "_" on the prefix matters:
+  // without it, "libicu" would also match "libicu-static".
+  let candidates = vendoredFiles.filter {
+    $0.hasPrefix("\(termuxPackage)_") && $0.hasSuffix("_\(vendoredArch.debSuffix).deb")
   }
 
-  if termuxPackage == "libicu" {
-    guard let icuVersionRange = packageName.range(of: "([0-9]+)\\.[0-9]", options: .regularExpression) else {
-      fatalError("couldn't extract ICU version from \(packageName)")
-    }
-    icuVersion = String(packageName[icuVersionRange])
-    guard let icuMajorVersionRange = icuVersion.range(of: "^[0-9]+", options: .regularExpression) else {
-      fatalError("couldn't extract ICU major version from \(icuVersion)")
-    }
-    icuMajorVersion = String(icuVersion[icuMajorVersionRange])
+  guard !candidates.isEmpty else {
+    fatalError("""
+      no vendored \(termuxPackage) package for \(ANDROID_ARCH) in \(vendorDir)
+      expected a file named \(termuxPackage)_<version>_\(vendoredArch.debSuffix).deb
+      """)
   }
+
+  guard candidates.count == 1 else {
+    let candidateList = candidates.map { "  \($0)" }.joined(separator: "\n")
+    fatalError("""
+      \(candidates.count) vendored \(termuxPackage) packages for \(ANDROID_ARCH) in \(vendorDir):
+      \(candidateList)
+      delete all but the one version you want to pin
+      """)
+  }
+
+  resolvedPackages.append((package: termuxPackage,
+                           name: candidates[0],
+                           path: vendorDir.appendingPathComponent(candidates[0])))
+}
+
+// Extracts the "77.1" from "libicu_77.1-2_aarch64.deb".
+func icuVersion(ofPackage name: String) -> String {
+  guard let versionRange = name.range(of: "([0-9]+)\\.[0-9]", options: .regularExpression) else {
+    fatalError("couldn't extract ICU version from \(name)")
+  }
+  return String(name[versionRange])
+}
+
+for resolved in resolvedPackages where resolved.package == "libicu" {
+  icuVersion = icuVersion(ofPackage: resolved.name)
+  guard let majorRange = icuVersion.range(of: "^[0-9]+", options: .regularExpression) else {
+    fatalError("couldn't extract ICU major version from \(icuVersion)")
+  }
+  icuMajorVersion = String(icuVersion[majorRange])
+}
+
+// libicu and libicu-static must be the same release: the static archives carry the
+// same version-suffixed symbols as the shared libraries, and mixing them produces
+// link or dlopen failures that only show up on device.
+for resolved in resolvedPackages where resolved.package == "libicu-static" {
+  let staticVersion = icuVersion(ofPackage: resolved.name)
+  guard staticVersion == icuVersion else {
+    fatalError("""
+      vendored ICU versions disagree for \(ANDROID_ARCH) in \(vendorDir)
+        libicu        \(icuVersion)
+        libicu-static \(staticVersion)
+      vendor the same release of both
+      """)
+  }
+}
+
+for resolved in resolvedPackages {
+  print("Using vendored \(resolved.name)")
 
   if !fmd.fileExists(atPath: cwd.appendingPathComponent(sdkDir)) {
-    print("Unpacking \(packageName)")
+    print("Unpacking \(resolved.name)")
     #if os(macOS)
-        _ = runCommand("tar", with: ["xf", "\(termuxArchive.appendingPathComponent(String(packageName)))"])
+        _ = runCommand("tar", with: ["xf", resolved.path])
     #else
-        _ = runCommand("ar", with: ["x", "\(termuxArchive.appendingPathComponent(String(packageName)))"])
+        _ = runCommand("ar", with: ["x", resolved.path])
     #endif
     _ = runCommand("tar", with: ["xf", "data.tar.xz"])
   }
