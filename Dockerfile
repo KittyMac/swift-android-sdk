@@ -9,13 +9,13 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && ap
     python3               \
     zip                   \
     rsync                 \
+    patchelf              \
     unzip
 
 RUN rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
-RUN curl -fsSL https://github.com/NixOS/patchelf/releases/download/0.18.0/patchelf-0.18.0-x86_64.tar.gz \
-    | tar xz -C /usr/local ./bin/patchelf
+RUN curl -fsSL https://github.com/NixOS/patchelf/releases/download/0.19.1/patchelf-0.19.1-x86_64.tar.gz | tar xz -C /usr/local ./bin/patchelf
 
 RUN clang --version
 RUN clang++ --version
